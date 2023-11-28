@@ -1,62 +1,105 @@
 import joplin from 'api';
+import { SettingItemType } from 'api/types';
 
 joplin.plugins.register({
     onStart: async function () {
+        // insert app locker setting
+        await joplin.settings.registerSection('appLocker', {
+            label: 'App Locker',
+            iconName: 'fa fa-lock',
+        });
+        // insert app locker setting
+        await joplin.settings.registerSettings({
+            appLockerPswd: {
+                value: '',
+                type: SettingItemType.String,
+                section: 'appLocker',
+                public: true,
+                secure: true,
+                label: 'Password (If password is empty, plugin app locker will not work.): ',
+            },
+            appLockerTimer: {
+                value: 5,
+                type: SettingItemType.Int,
+                section: 'appLocker',
+                public: true,
+                label: 'Lock joplin when it has no activity for how many minutes (Default is 5 minutes, value must be integer and greater than 0.): ',
+            },
+        });
+
         let startTime = +new Date();
         let checkTimer = null;
 
-        // 5000 s，read from setting
-        const gup = 3000;
+        // relock
+        const resetLock = (status, pswd) => {
+            lock(status, pswd);
+            clearTimeout(checkTimer);
+        };
 
-        let lockDialog;
-        let lockResult;
+        // lock app
+        const lock = async (wrong, pswd) => {
+            const Dialogs = joplin.views.dialogs;
+            const lockId = 'app.locker' + +new Date();
+            const lockDialog = await Dialogs.create(lockId);
 
-        const lock = async () => {
-            if (!lockDialog) {
-                lockDialog = await joplin.views.dialogs.create('app.locker');
+            await Dialogs.setHtml(
+                lockDialog,
+                `<form style="margin: 100px auto; text-align: center; font-size: 16px;" name="appLocker">
+                    <p>${
+                        wrong
+                            ? '<span style="color: red;">Password is wrong.</span> '
+                            : ''
+                    }Please enter unlock password:</p>
+            		<input type="password" name="password"/>
+            	</form>`
+            );
+            await Dialogs.setButtons(lockDialog, [
+                { id: 'submit', title: 'Unlock' },
+            ]);
+            await Dialogs.setFitToContent(lockDialog, false);
 
-                await joplin.views.dialogs.setHtml(
-                    lockDialog,
-                    `
-                <form name="app.locker">
-                    Password: <input type="password" name="password"/>
-                </form>
-                `
-                );
-                await joplin.views.dialogs.setButtons(lockDialog, [
-                    {
-                        id: 'unlock',
-                        title: 'Unlock',
-                        onClick() {
-                            console.log('lockDialog', lockDialog, lockResult);
-                        },
-                    },
-                ]);
-            }
+            let lockResult = await Dialogs.open(lockDialog);
 
-            if (!lockResult) {
-                lockResult = await joplin.views.dialogs.open(lockDialog);
+            if (lockResult?.formData?.appLocker?.password !== pswd) {
+                resetLock(true, pswd);
             }
         };
 
         // check app is idle or not
-        const checkIdle = () => {
-            const now = +new Date();
+        const checkIdle = async () => {
+            const lockTimer = parseInt(
+                (await joplin.settings.value('appLockerTimer')) || '5'
+            );
+            const pswd = (
+                (await joplin.settings.value('appLockerPswd')) || ''
+            ).trim();
 
-            checkTimer = setTimeout(() => {
-                console.log(111);
+            if (lockTimer > 0 && pswd) {
+                const now = +new Date();
+                const checkTime = (lockTimer - 1) * 60 * 1000 + 60 * 1000;
 
-                if (now - startTime > gup) {
-                    lock();
-                    console.log(222, 'locked');
-                    clearTimeout(checkTimer);
-                } else {
-                    checkIdle();
-                }
-            }, 3000);
+                // console.log(
+                //     [
+                //         lockTimer,
+                //         pswd,
+                //         now - startTime,
+                //         new Date(startTime),
+                //         'checking joplin idle status',
+                //     ].join(',')
+                // );
+
+                clearTimeout(checkTimer);
+                checkTimer = setTimeout(() => {
+                    if (now - startTime + checkTime > lockTimer * 60 * 1000) {
+                        resetLock(null, pswd);
+                    } else {
+                        checkIdle();
+                    }
+                }, checkTime);
+            }
         };
 
-        // when note changed, recheck app status
+        // when note changed, check app status again
         joplin.workspace.onNoteChange(() => {
             startTime = +new Date();
             clearTimeout(checkTimer);

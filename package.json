@@ -9,7 +9,8 @@
   },
   "license": "MIT",
   "keywords": [
-    "joplin-plugin"
+    "joplin-plugin",
+    "joplin-plugin-app-locker"
   ],
   "description": "A joplin plugin which will lock joplin app when it is idle.",
   "files": [
