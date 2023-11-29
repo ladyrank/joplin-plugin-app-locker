@@ -62,6 +62,10 @@ joplin.plugins.register({
 
             if (lockResult?.formData?.appLocker?.password !== pswd) {
                 resetLock(true, pswd);
+            } else {
+                startTime = +new Date();
+                clearTimeout(checkTimer);
+                checkIdle();
             }
         };
 
