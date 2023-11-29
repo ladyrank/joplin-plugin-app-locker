@@ -1,8 +1,8 @@
 {
 	"manifest_version": 1,
-	"id": "app.locker",
+	"id": "joplin.plugin.app.locker",
 	"app_min_version": "2.8",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"name": "joplin plugin app locker",
 	"description": "A joplin plugin which will lock joplin app when it is idle.",
 	"author": "ladyrank",
