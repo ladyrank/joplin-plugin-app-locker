@@ -1,4 +1,4 @@
-# joplin-plugin-app-locker
+# joplin-plugin-screen-locker
 
 A joplin plugin which will lock screen of joplin app when it is idle, which can prevent others view your note or your screen directly.
 
