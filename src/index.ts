@@ -1,6 +1,9 @@
 import joplin from 'api';
 import { SettingItemType } from 'api/types';
 
+// TODO: duplicate dialogs showed
+// TODO：lock the screen when app start
+
 joplin.plugins.register({
     onStart: async function () {
         // insert app locker setting
