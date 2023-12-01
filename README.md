@@ -1,5 +1,8 @@
 # joplin-plugin-app-locker
-A joplin plugin which will lock joplin app when it is idle.
+
+A joplin plugin which will lock screen of joplin app when it is idle, which can prevent others view your note or your screen directly.
+
+**Please note** this plugin can't encrypt your note data, if you want to encrypt your data, please enable the setting of End-to-end encryption.
 
 For more joplin plugins, please see [here](https://github.com/joplin/plugins).
 
