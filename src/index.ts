@@ -45,6 +45,12 @@ joplin.plugins.register({
             const lockId = 'app.locker' + +new Date();
             const lockDialog = await Dialogs.create(lockId);
 
+            let lockResult;
+
+            if (lockResult?.formData?.appLocker) {
+                return false;
+            }
+
             await Dialogs.setHtml(
                 lockDialog,
                 `<form style="margin: 100px auto; text-align: center; font-size: 16px;" name="appLocker">
@@ -61,7 +67,7 @@ joplin.plugins.register({
             ]);
             await Dialogs.setFitToContent(lockDialog, false);
 
-            let lockResult = await Dialogs.open(lockDialog);
+            lockResult = await Dialogs.open(lockDialog);
 
             if (lockResult?.formData?.appLocker?.password !== pswd) {
                 resetLock(true, pswd);
