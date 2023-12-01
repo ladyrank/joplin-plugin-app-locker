@@ -1,6 +1,6 @@
 {
   "name": "joplin-plugin-app-lock",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "dist": "webpack --env joplin-plugin-config=buildMain && webpack --env joplin-plugin-config=buildExtraScripts && webpack --env joplin-plugin-config=createArchive",
     "prepare": "npm run dist",
@@ -12,7 +12,7 @@
     "joplin-plugin",
     "joplin-plugin-app-locker"
   ],
-  "description": "A joplin plugin which will lock joplin app when it is idle.",
+  "description": "A joplin plugin which will lock joplin app screen when it is idle.",
   "files": [
     "publish"
   ],
