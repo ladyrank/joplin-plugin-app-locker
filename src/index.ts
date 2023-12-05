@@ -1,9 +1,6 @@
 import joplin from 'api';
 import { SettingItemType } from 'api/types';
 
-// TODO: duplicate dialogs showed
-// TODO：lock the screen when app start
-
 joplin.plugins.register({
     onStart: async function () {
         // insert app locker setting
@@ -32,6 +29,7 @@ joplin.plugins.register({
 
         let startTime = +new Date();
         let checkTimer = null;
+        let lockId = null;
 
         // relock
         const resetLock = (status, pswd) => {
@@ -42,14 +40,14 @@ joplin.plugins.register({
         // lock app
         const lock = async (wrong, pswd) => {
             const Dialogs = joplin.views.dialogs;
-            const lockId = 'app.locker' + +new Date();
-            const lockDialog = await Dialogs.create(lockId);
-
             let lockResult;
 
-            if (lockResult?.formData?.appLocker) {
+            if ((lockResult && lockResult?.formData?.appLocker) || lockId) {
                 return false;
             }
+
+            lockId = 'app.locker' + +new Date();
+            const lockDialog = await Dialogs.create(lockId);
 
             await Dialogs.setHtml(
                 lockDialog,
@@ -70,22 +68,29 @@ joplin.plugins.register({
             lockResult = await Dialogs.open(lockDialog);
 
             if (lockResult?.formData?.appLocker?.password !== pswd) {
+                lockId = null;
                 resetLock(true, pswd);
             } else {
+                lockId = null;
                 startTime = +new Date();
                 clearTimeout(checkTimer);
-                checkIdle();
+                checkIdle(false);
             }
         };
 
         // check app is idle or not
-        const checkIdle = async () => {
+        const checkIdle = async (actNow) => {
             const lockTimer = parseInt(
                 (await joplin.settings.value('appLockerTimer')) || '5'
             );
             const pswd = (
                 (await joplin.settings.value('appLockerPswd')) || ''
             ).trim();
+
+            if (actNow) {
+                resetLock(null, pswd);
+                return false;
+            }
 
             if (lockTimer > 0 && pswd) {
                 const now = +new Date();
@@ -106,7 +111,7 @@ joplin.plugins.register({
                     if (now - startTime + checkTime > lockTimer * 60 * 1000) {
                         resetLock(null, pswd);
                     } else {
-                        checkIdle();
+                        checkIdle(false);
                     }
                 }, checkTime);
             }
@@ -116,9 +121,9 @@ joplin.plugins.register({
         joplin.workspace.onNoteChange(() => {
             startTime = +new Date();
             clearTimeout(checkTimer);
-            checkIdle();
+            checkIdle(false);
         });
 
-        checkIdle();
+        checkIdle(true);
     },
 });
