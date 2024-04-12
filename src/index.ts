@@ -1,8 +1,10 @@
 import joplin from 'api';
 import { SettingItemType } from 'api/types';
+import { MenuItemLocation } from 'api/types';
 
 joplin.plugins.register({
     onStart: async function () {
+
         // insert app locker setting
         await joplin.settings.registerSection('appLocker', {
             label: 'App Locker',
@@ -16,7 +18,7 @@ joplin.plugins.register({
                 section: 'appLocker',
                 public: true,
                 secure: true,
-                label: 'Password (If password is empty, plugin app locker will not work.): ',
+                label: 'Password (If password is empty, plugin app locker will not work.',
             },
             appLockerTimer: {
                 value: 5,
@@ -32,13 +34,19 @@ joplin.plugins.register({
         let lockId = null;
 
         // relock
-        const resetLock = (status, pswd) => {
-            lock(status, pswd);
+        const resetLock = (needShowError, pswd) => {
+            lock(needShowError, pswd);
             clearTimeout(checkTimer);
         };
 
+        // show message
+        const showMessage = async (message) => {
+            const Dialogs = joplin.views.dialogs;
+            await Dialogs.showMessageBox(message);
+        };
+
         // lock app
-        const lock = async (wrong, pswd) => {
+        const lock = async (needShowError, pswd) => {
             const Dialogs = joplin.views.dialogs;
             let lockResult;
 
@@ -53,12 +61,12 @@ joplin.plugins.register({
                 lockDialog,
                 `<form style="margin: 100px auto; text-align: center; font-size: 16px;" name="appLocker">
                     <p>${
-                        wrong
+                        needShowError
                             ? '<span style="color: red;">Password is wrong.</span> '
                             : ''
                     }Please enter unlock password:</p>
-            		<input type="password" name="password"/>
-            	</form>`
+                    <input type="password" name="password"/>
+                </form>`
             );
             await Dialogs.setButtons(lockDialog, [
                 { id: 'submit', title: 'Unlock' },
@@ -87,7 +95,12 @@ joplin.plugins.register({
                 (await joplin.settings.value('appLockerPswd')) || ''
             ).trim();
 
-            if (actNow) {
+            // if pswd is not set , not lock app
+            if (pswd === '') {
+                await showMessage('Password is empty, plugin app locker will not work.')
+            }
+
+            if (actNow && pswd) {
                 resetLock(null, pswd);
                 return false;
             }
@@ -123,7 +136,33 @@ joplin.plugins.register({
             clearTimeout(checkTimer);
             checkIdle(false);
         });
+        
+        // register command
+        joplin.commands.register({
+            name: 'AppLocker.AppLockNow',
+            label: 'AppLocker.AppLockNow',
+            enabledCondition: '',
+            execute: async () => {
+                await checkIdle(true)
+            }
+        });
+        
+        // create contextMenu 
+        joplin.views.menuItems.create("AppLocker.AppLockNow", "AppLocker.AppLockNow", MenuItemLocation.Edit);
+        joplin.views.menuItems.create("AppLocker.AppLockNow", "AppLocker.AppLockNow",MenuItemLocation.EditorContextMenu);
 
-        checkIdle(true);
+        // create Tools menuItems
+        let menuItems = []
+        menuItems.push({commandName: 'AppLocker.AppLockNow', accelerator: 'Ctrl+Cmd+Option+L'})
+        await joplin.views.menus.create('AppLocker', 'AppLocker', menuItems, MenuItemLocation.Tools);
+
+        // if pswd is not set , lock app on login
+        const pswd = (
+            (await joplin.settings.value('appLockerPswd')) || ''
+        ).trim();
+        if (pswd !== '') {
+            checkIdle(true);
+        }
+
     },
 });
