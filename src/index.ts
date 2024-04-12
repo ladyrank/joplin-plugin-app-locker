@@ -18,7 +18,7 @@ joplin.plugins.register({
                 section: 'appLocker',
                 public: true,
                 secure: true,
-                label: 'Password (If password is empty, plugin app locker will not work.',
+                label: 'Password (If password is empty, plugin app locker will not work.)',
             },
             appLockerTimer: {
                 value: 5,
